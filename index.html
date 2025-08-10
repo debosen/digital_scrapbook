@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Anushka & Dev — Our Digital Scrapbook</title>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1:#fff7f9;
+    --paper:#f7efe9;
+    --accent:#d64578;
+    --frame:#fff;
+    --shadow: 0 10px 30px rgba(40,20,30,0.12);
+  }
+  html,body{height:100%;margin:0;font-family:"Quicksand",system-ui,Arial;color:#2b1f26;background:linear-gradient(180deg,var(--bg1),#fff);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:26px auto;padding:22px}
+  header{display:flex;align-items:center;gap:18px;justify-content:space-between;flex-wrap:wrap}
+  h1{margin:0;color:var(--accent);font-size:28px}
+  p.lead{margin:0;color:#6b5160}
+
+  /* scrapbook paper background */
+  .paper{
+    background:var(--paper);
+    padding:18px;border-radius:18px;
+    box-shadow: 0 6px 24px rgba(30,20,20,0.06);
+    margin-top:18px;
+  }
+
+  /* masonry-ish grid */
+  .gallery{
+    display:grid;
+    grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+    gap:18px;
+  }
+
+  /* polaroid style item */
+  figure.item{
+    --angle: calc((var(--r,0) - 0.5) * 6deg);
+    background:var(--frame);
+    border-radius:12px;
+    padding:10px 12px 16px;
+    border:6px solid #fff;
+    box-shadow: var(--shadow);
+    transform: rotate(var(--angle));
+    transition: transform .28s cubic-bezier(.2,.9,.2,1), box-shadow .28s ease, z-index .01s;
+    cursor:pointer;
+    user-select:none;
+  }
+  figure.item:nth-child(odd){ --r: 0.84; }
+  figure.item:nth-child(even){ --r: 0.28; }
+  figure.item:nth-child(3n){ --r: 0.12; }
+  figure.item:hover{
+    transform: rotate(0deg) scale(1.04);
+    box-shadow: 0 20px 40px rgba(30,10,20,0.22);
+    z-index:20;
+  }
+
+  figure.item img,
+  figure.item video{
+    width:100%;
+    height:220px;
+    object-fit: cover;
+    display:block;
+    border-radius:8px;
+    background:#000;
+  }
+  figure.item .caption{
+    margin-top:10px;font-size:13px;color:#6b5160;
+    text-align:left;padding:0 4px;
+  }
+
+  /* lightbox */
+  .lightbox{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:linear-gradient(rgba(6,6,8,0.72), rgba(10,6,10,0.78));
+    z-index:9999;padding:30px;
+  }
+  .lightbox.open{display:flex}
+  .viewer{
+    width:100%;max-width:1100px;max-height:88vh;position:relative;display:flex;align-items:center;justify-content:center;
+    background:transparent;border-radius:14px;
+  }
+  .media{
+    max-width:100%;max-height:82vh;border-radius:12px;box-shadow:0 30px 70px rgba(10,6,10,0.6);
+    object-fit:contain;
+    background:#000;
+  }
+
+  /* controls */
+  .ctrl{
+    position:absolute;top:50%;transform:translateY(-50%);
+    width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,0.06);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.06);
+    color:#fff;font-size:26px;cursor:pointer;transition:transform .16s ease,background .18s;
+  }
+  .ctrl:hover{transform:translateY(-50%) scale(1.06);background:rgba(255,255,255,0.12)}
+  .prev{left:12px}
+  .next{right:12px}
+  .close{
+    top:18px;right:18px;left:auto;transform:none;width:46px;height:46px;font-size:20px;border-radius:12px;
+    position:absolute;background:rgba(255,255,255,0.06);backdrop-filter:blur(4px)
+  }
+
+  /* small meta bar */
+  .meta{
+    position:absolute;left:50%;transform:translateX(-50%);bottom:8px;color:#fff;font-size:14px;opacity:0.95;
+    background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    padding:6px 10px;border-radius:10px;backdrop-filter:blur(4px);
+  }
+
+  /* responsive tweaks */
+  @media (max-width:720px){
+    figure.item img, figure.item video{height:180px}
+    .ctrl{width:46px;height:46px}
+  }
+
+  /* subtle appear animation */
+  figure.item{opacity:0;animation:pop .45s ease forwards; animation-delay: calc(var(--i) * 0.03s);}
+  @keyframes pop{from{opacity:0;transform:rotate(calc(var(--angle) - 8deg)) scale(.95)}to{opacity:1;transform:rotate(var(--angle)) scale(1)}}
+</style>
+</head>
+<body>
+  <!--
+    Single-file Scrapbook:
+    - Save this file (example: scrapbook.html)
+    - Create an 'assets' folder next to it containing:
+      photo1.jpg ... photo38.jpg
+      clip1.mp4 ... clip65.mp4
+    - Open the .html in a browser.
+  -->
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Anushka &amp; Dev — Our Digital Scrapbook</h1>
+        <p class="lead">Click any memory to expand. Use ← / → or the arrows to navigate. Will keep updating this with many more memories that are yet to be made <3</p>
+      </div>
+    </header>
+
+    <section class="paper">
+      <main id="gallery" class="gallery" aria-live="polite"></main>
+    </section>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox" aria-hidden="true" role="dialog" aria-label="Memory viewer">
+    <div class="viewer" role="document">
+      <button class="ctrl prev" id="prevBtn" aria-label="Previous">‹</button>
+      <div id="contentWrap" style="display:flex;align-items:center;justify-content:center;width:100%"></div>
+      <button class="ctrl next" id="nextBtn" aria-label="Next">›</button>
+
+      <button id="closeBtn" class="close" aria-label="Close">✕</button>
+      <div id="meta" class="meta" aria-hidden="true"></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // Configuration: update counts if they change
+  const IMG_COUNT = 38;
+  const VID_COUNT = 65;
+  const basePath = 'assets/'; // change if your files are in a different folder
+
+  // Build items array in desired order (all photos, then videos)
+  const items = [];
+  for (let i=1; i<=IMG_COUNT; i++) items.push({type:'image', src: `${basePath}photo${i}.jpg`, caption:`Still Memory ${i}`});
+  for (let i=1; i<=VID_COUNT; i++) items.push({type:'video', src: `${basePath}clip${i}.mp4`, caption:`Moving Memory ${i}`});
+
+  const gallery = document.getElementById('gallery');
+  const contentWrap = document.getElementById('contentWrap');
+  const lightbox = document.getElementById('lightbox');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const closeBtn = document.getElementById('closeBtn');
+  const meta = document.getElementById('meta');
+
+  // Render gallery items
+  items.forEach((it, idx) => {
+    const fig = document.createElement('figure');
+    fig.className = 'item';
+    fig.setAttribute('tabindex','0');
+    fig.style.setProperty('--i', idx);
+    fig.style.setProperty('--r', Math.random().toFixed(2)); // random tilt seed
+
+    const captionText = (it.type === 'image') ? `Photo ${idx+1}` : `Clip ${idx+1}`;
+    if (it.type === 'image') {
+      fig.innerHTML = `<img loading="lazy" src="${it.src}" alt="${captionText}"><div class="caption">${it.caption}</div>`;
+    } else {
+      // show a poster-like thumbnail by using the video element (muted, no controls) for the gallery
+      fig.innerHTML = `<video muted preload="metadata" playsinline poster="" aria-hidden="true"><source src="${it.src}#t=0.1" type="video/mp4"></video><div class="caption">${it.caption}</div>`;
+      const v = fig.querySelector('video');
+      // attempt to show a frame on hover
+      v.addEventListener('mouseenter', ()=> { v.play().catch(()=>{}); } );
+      v.addEventListener('mouseleave', ()=> { v.pause(); v.currentTime = 0; } );
+    }
+
+    // click/keyboard open
+    fig.addEventListener('click', ()=> openAt(idx));
+    fig.addEventListener('keydown', (e)=> { if(e.key==='Enter' || e.key===' ') { e.preventDefault(); openAt(idx); } });
+
+    gallery.appendChild(fig);
+  });
+
+  // Lightbox state
+  let current = 0;
+
+  function clearContent() {
+    contentWrap.innerHTML = '';
+    // stop any playing videos inside contentWrap (just in case)
+    const vids = contentWrap.querySelectorAll('video');
+    vids.forEach(v => { try{ v.pause(); v.src = ''; } catch(e){} });
+  }
+
+  function showItem(index) {
+    if (index < 0) index = items.length - 1;
+    if (index >= items.length) index = 0;
+    current = index;
+    clearContent();
+
+    const it = items[current];
+    meta.textContent = `${it.caption} • ${current+1} / ${items.length}`;
+    meta.style.display = 'block';
+
+    if (it.type === 'image') {
+      const img = document.createElement('img');
+      img.className = 'media';
+      img.src = it.src;
+      img.alt = it.caption;
+      img.loading = 'eager';
+      contentWrap.appendChild(img);
+      // ensure image fits without distortion (object-fit: contain handled in CSS)
+    } else {
+      const vid = document.createElement('video');
+      vid.className = 'media';
+      vid.src = it.src;
+      vid.controls = true;
+      vid.autoplay = true;
+      vid.playsInline = true;
+      vid.muted = false;
+      contentWrap.appendChild(vid);
+      // focus controls for keyboard users
+      setTimeout(()=> vid.focus(), 200);
+    }
+
+    // update aria
+    lightbox.setAttribute('aria-hidden', 'false');
+  }
+
+  function openAt(index) {
+    showItem(index);
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // focus for keyboard nav
+    prevBtn.focus();
+  }
+
+  function closeLB() {
+    lightbox.classList.remove('open');
+    document.body.style.overflow = '';
+    clearContent();
+    lightbox.setAttribute('aria-hidden', 'true');
+  }
+
+  // navigation handlers
+  prevBtn.addEventListener('click', ()=> { showItem((current - 1 + items.length) % items.length); });
+  nextBtn.addEventListener('click', ()=> { showItem((current + 1) % items.length); });
+  closeBtn.addEventListener('click', closeLB);
+
+  // click outside to close
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLB();
+  });
+
+  // keyboard navigation
+  window.addEventListener('keydown', (e) => {
+    if (!lightbox.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLB();
+    if (e.key === 'ArrowLeft') { prevBtn.click(); }
+    if (e.key === 'ArrowRight') { nextBtn.click(); }
+  });
+
+  // swipe support for touch
+  (function addSwipe(){
+    let startX = 0, startY = 0;
+    let tracking = false;
+    contentWrap.addEventListener('touchstart', (e)=> {
+      if (!e.touches || e.touches.length === 0) return;
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY; tracking = true;
+    }, {passive:true});
+    contentWrap.addEventListener('touchmove', (e)=> {
+      if (!tracking) return;
+    }, {passive:true});
+    contentWrap.addEventListener('touchend', (e)=> {
+      if(!tracking) return; tracking = false;
+      const dx = (e.changedTouches[0].clientX - startX);
+      const dy = (e.changedTouches[0].clientY - startY);
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0) prevBtn.click(); else nextBtn.click();
+      }
+    }, {passive:true});
+  })();
+
+  // preload first and nearby items for snappier nav (images only to save bandwidth)
+  function preloadNeighbors(idx) {
+    [idx-1, idx, idx+1].forEach(i => {
+      if (i<0 || i>=items.length) return;
+      const it = items[(i+items.length)%items.length];
+      if (it.type === 'image') {
+        const im = new Image(); im.src = it.src;
+      }
+    });
+  }
+
+  // enhance: when lightbox opens showItem preloads neighbors
+  prevBtn.addEventListener('click', ()=> preloadNeighbors(current-1));
+  nextBtn.addEventListener('click', ()=> preloadNeighbors(current+1));
+
+  // graceful fallback if assets missing: show broken alt
+  // DONE: everything assembled
+
+})();
+</script>
+</body>
+</html>
